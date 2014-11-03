@@ -111,71 +111,83 @@ describe('Role', function(){
                 'conflict applying duplicate methods to role'
             );
         });
-        describe('modifiers', function(){
-            it('before', function(){
-                var events = [];
-                var BeforeFoo = new Role({before: {foo: function(){ events.push('before') }}});
-                assert.deepEqual(BeforeFoo.requires(), ['foo'], 'modifier requires modified method');
+    });
+    describe('modifiers', function(){
+        it('before', function(){
+            var events = [];
+            var BeforeFoo = new Role({before: {foo: function(){ events.push('before') }}});
+            assert.deepEqual(BeforeFoo.requires(), ['foo'], 'modifier requires modified method');
 
-                var Class = function(){}; Class.prototype = {foo: function(){ events.push('called') }};
-                var Modified = Role.apply_roles(Class, BeforeFoo);
-                var o = new Modified; o.foo();
-                assert.deepEqual(events, ['before','called'], 'before modifier called before');
-            });
-            it('after', function(){
-                var events = [];
-                var AfterFoo = new Role({after: {foo: function(){ events.push('after') }}});
-                assert.deepEqual(AfterFoo.requires(), ['foo'], 'modifier requires modified method');
+            var Class = function(){}; Class.prototype = {foo: function(){ events.push('called') }};
+            var Modified = Role.apply_roles(Class, BeforeFoo);
+            var o = new Modified; o.foo();
+            assert.deepEqual(events, ['before','called'], 'before modifier called before');
+        });
+        it('after', function(){
+            var events = [];
+            var AfterFoo = new Role({after: {foo: function(){ events.push('after') }}});
+            assert.deepEqual(AfterFoo.requires(), ['foo'], 'modifier requires modified method');
 
-                var Class = function(){}; Class.prototype = {foo: function(){ events.push('called') }};
-                var Modified = Role.apply_roles(Class, AfterFoo);
-                var o = new Modified; o.foo();
-                assert.deepEqual(events, ['called','after'], 'after modifier called after');
-            });
-            it('around', function(){
-                var events = [];
-                var notify_around = function(method){
-                    events.push('before');
-                    method.apply(this, _.rest(arguments));
-                    events.push('after');
-                };
-                var AroundFoo = new Role({around: {foo: notify_around}});
-                assert.deepEqual(AroundFoo.requires(), ['foo'], 'modifier requires modified method');
+            var Class = function(){}; Class.prototype = {foo: function(){ events.push('called') }};
+            var Modified = Role.apply_roles(Class, AfterFoo);
+            var o = new Modified; o.foo();
+            assert.deepEqual(events, ['called','after'], 'after modifier called after');
+        });
+        it('around', function(){
+            var events = [];
+            var notify_around = function(method){
+                events.push('before');
+                method.apply(this, _.rest(arguments));
+                events.push('after');
+            };
+            var AroundFoo = new Role({around: {foo: notify_around}});
+            assert.deepEqual(AroundFoo.requires(), ['foo'], 'modifier requires modified method');
 
-                var Class = function(){}; Class.prototype = {foo: function(){ events.push('called') }};
-                var Modified = Role.apply_roles(Class, AroundFoo);
-                var o = new Modified; o.foo();
-                assert.deepEqual(events, ['before', 'called','after'], 'around modifier called around');
+            var Class = function(){}; Class.prototype = {foo: function(){ events.push('called') }};
+            var Modified = Role.apply_roles(Class, AroundFoo);
+            var o = new Modified; o.foo();
+            assert.deepEqual(events, ['before', 'called','after'], 'around modifier called around');
+        });
+        it('multiple modifiers in role', function(){
+            var events = [];
+            var Class = function(){}; Class.prototype = {foo: function(){ events.push('called') }};
+            var Modifier = new Role({
+                before: {foo: function(){ events.push('before') }},
+                around: {foo: function(method){
+                    events.push('before around');
+                    method.call(this, _.rest(arguments));
+                    events.push('after around');
+                }},
+                after: {foo: function(){ events.push('after') }},
             });
-            it('multiple modifiers in role', function(){
-                var events = [];
-                var Class = function(){}; Class.prototype = {foo: function(){ events.push('called') }};
-                var Modifier = new Role({
-                    before: {foo: function(){ events.push('before') }},
-                    around: {foo: function(method){
-                        events.push('before around');
-                        method.call(this, _.rest(arguments));
-                        events.push('after around');
-                    }},
-                    after: {foo: function(){ events.push('after') }},
-                });
-                var o = new(Role.apply_roles(Class, Modifier)); o.foo();
-                assert.deepEqual(
-                    events,
-                    ['before','before around','called','after around','after'],
-                    'modifiers executed in order'
-                );
-            });
-            it.skip('role has method modifiers in applied role', function(){
-                var events = [];
-                var Class = function(){}; Class.prototype = {foo: function(){ events.push('called') }};
-            
-            });
-            it.skip('class applies multiple roles with method modifiers', function(){
-                var events = [];
-                var Class = function(){}; Class.prototype = {foo: function(){ events.push('called') }};
-            
-            });
+            var o = new(Role.apply_roles(Class, Modifier)); o.foo();
+            assert.deepEqual(
+                events,
+                ['before','before around','called','after around','after'],
+                'modifiers executed in order'
+            );
+        });
+        it.skip('role has method modifiers in applied role', function(){
+            var events = [];
+            var Class = function(){}; Class.prototype = {foo: function(){ events.push('called') }};
+        
+        });
+        it.skip('class applies multiple roles with method modifiers', function(){
+            var events = [];
+            var Class = function(){}; Class.prototype = {foo: function(){ events.push('called') }};
+        });
+    });
+    describe('inheritance', function(){
+        var Parent = function(){};
+        var DoesFoo = new Role({foo: function(){}});
+        Parent = Role.apply_roles(Parent, DoesFoo);
+        var Child = function(){}; Child.prototype = new Parent;
+        var c = new Child; var p = new Parent;
+        it('does_role', function(){
+            assert.ok(Role.does_role(c, DoesFoo), 'subclass does role of parent');
+        });
+        it('provided methods', function(){
+            assert.equal(c.foo, p.foo, 'subclass inherits some role methods from parent');
         });
     });
 });

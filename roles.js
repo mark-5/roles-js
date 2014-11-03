@@ -1,16 +1,16 @@
 var _              = require("underscore");
 var HashOfRefs     = require("./hash_of_refs.js");
-var MultiValueHash = require("./multivalue_hash.js");
 
 var inherits_from = function(subclass, superclass){
     var Surrogate = function(){};
-    Surrogate.prototype = obj.subclass;
+    Surrogate.prototype = subclass.prototype;
     return (new Surrogate) instanceof superclass;
 };
 
 var extend_class = function(mapping){
     var klass = this;
     var child = function(){ return klass.apply(this, arguments) };
+    _.extend(child, klass);
     var Surrogate = function(){ this.constructor = child };
     Surrogate.prototype = klass.prototype;
     child.prototype = new Surrogate;
@@ -21,19 +21,21 @@ var extend_class = function(mapping){
 var method_modifiers = ['before', 'after', 'around'];
 var not_methods = _.flatten([method_modifiers, 'with', 'requires']);
 var MetaRole = new function(){
-    this._roles = [];
-    this._consumers = new HashOfRefs;
+    this._applications = new HashOfRefs;
 
     this.is_role = function(role) { return role instanceof Role };
     this.does_role = function(klass, role) {
         if (this.is_role(klass)) {
             return _.contains(klass.applied(), role);
         } else {
-            return    _.contains(this._consumers.get(klass), role)
-                   || _.contains(this._consumers.get(klass.constructor), role);
+            var applied_to = this._applications.get(role);
+            return    _.contains(applied_to, klass)
+                   || _.some(applied_to, _.partial(inherits_from, klass))
+                   || _.some(applied_to, _.partial(inherits_from, klass.constructor));
         }
     };
     this.apply_roles = function(klass){
+        var me = this;
         var roles = _.rest(arguments);
         var conflicts = this._get_conflicts(roles);
         if (_.size(conflicts)) {
@@ -52,7 +54,13 @@ var MetaRole = new function(){
         var klass_with_role = extend.call(klass, provided);
         this._install_modifiers(klass_with_role, _.map(roles, function(role){ return role.modifiers() }));
 
-        this._consumers.set(klass_with_role, roles);
+        var roles_applied = roles.concat(_.chain(roles).map(function(role){ return role.applied() }).flatten(true).value());
+        _.each(_.uniq(roles_applied), function(role){
+            var applied_to = me._applications.get(role);
+            if (!applied_to) applied_to = [], me._applications.set(role, applied_to);
+            applied_to.push(klass_with_role)
+        });
+
         return klass_with_role;
     };
     this._get_methods = function(role){ return _.omit(spec, ['before','after','around','with','requires']) };
