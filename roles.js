@@ -75,30 +75,41 @@ var MetaRole = new function(){
     this._get_missing = function(klass, provided, required){
         return _.reject(required, function(method){ return klass.prototype[method] || provided[method] });
     };
-    this._install_modifier = function(klass, modifier){
-        _.each(['before', 'around', 'after'], function(type){
-            var methods = modifier[type];
-            _.each(methods, function(mods, name){
-                _.each(mods, function(mod){
-                    var orig = klass.prototype[name];
+    this._install_modifiers = function(klass, modifiers){
+        var me = this;
+        var modifier_data = {};
+        _.each(modifiers, function(modifier){
+            _.each(['before', 'around', 'after'], function(type){
+                var methods = modifier[type];
+                _.each(methods, function(coderefs, name){
+                    if (!modifier_data[name]) modifier_data[name] = {wrapped: klass.prototype[name]};
                     if (type == 'before') {
-                        klass.prototype[name] = function(){ mod.apply(this, arguments); return orig.apply(this, arguments) };
+                        if (!modifier_data[name].before) modifier_data[name].before = [];
+                        modifier_data[name].before = _.flatten([coderefs, modifier_data[name].before], true);
                     } else if (type == 'after') {
-                        klass.prototype[name] = function(){
-                            var ret = orig.apply(this, arguments);
-                            mod.apply(this, arguments);
-                            return ret
-                        };
+                        if (!modifier_data[name].after) modifier_data[name].after = [];
+                        modifier_data[name].after = _.flatten([modifier_data[name].after, coderefs], true);
                     } else if (type == 'around') {
-                        klass.prototype[name] = function(){ return mod.apply(this, _.flatten([orig, arguments], true)) };
+                        var wrapped = modifier_data[name].wrapped;
+                        _.each(coderefs, function(coderef){
+                            var wrapped = modifier_data[name].wrapped;
+                            modifier_data[name].wrapped = function(){
+                                return coderef.apply(this, _.flatten([wrapped, arguments], true));
+                            };
+                        });
                     }
                 });
             });
         });
-    };
-    this._install_modifiers = function(klass, modifiers){
-        var me = this;
-        return _.each(modifiers, function(modifier){ me._install_modifier(klass, modifier) });
+        _.each(modifier_data, function(modifiers, name){
+            klass.prototype[name] = function(){
+                var me = this; var args = arguments;
+                _.each(modifiers.before||[], function(code){ code.apply(me, args) });
+                var retval = modifiers.wrapped.apply(me, args);;
+                _.each(modifiers.after||[], function(code){ code.apply(me, args) });
+                return retval;
+            };
+        });
     };
 };
 

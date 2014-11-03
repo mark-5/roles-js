@@ -147,7 +147,7 @@ describe('Role', function(){
                 var o = new Modified; o.foo();
                 assert.deepEqual(events, ['before', 'called','after'], 'around modifier called around');
             });
-            it.skip('multiple modifiers in role', function(){
+            it('multiple modifiers in role', function(){
                 var events = [];
                 var Class = function(){}; Class.prototype = {foo: function(){ events.push('called') }};
                 var Modifier = new Role({
