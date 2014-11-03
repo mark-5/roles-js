@@ -36,14 +36,14 @@ var MetaRole = new function(){
     this.apply_roles = function(klass){
         var roles = _.rest(arguments);
         var conflicts = this._get_conflicts(roles);
-        if (_.keys(conflicts).length) {
+        if (_.size(conflicts)) {
             var methods = _.keys(conflicts).join(',');
             throw "Conflicting methods: " + methods;
         }
         var required  = _.flatten(_.map(roles, function(role){ return role.requires() }), true);
         var provided  = _.extend.apply(_, _.map(roles, function(role){ return role.provides() }));
         var missing   = this._get_missing(klass, provided, required);
-        if (missing.length) {
+        if (_.size(missing)) {
             var methods = missing.join(',');
             throw "Missing methods: " + methods;
         }
@@ -116,7 +116,7 @@ var MetaRole = new function(){
 var Role = function(spec){
     this.spec = spec;
     var conflicts = this.meta._get_conflicts(spec.with || []);
-    if (_.keys(conflicts).length) {
+    if (_.size(conflicts)) {
         var methods = _.keys(conflicts).join(',');
         throw "Conflicting methods: " + methods;
     }
