@@ -29,9 +29,11 @@ var MetaRole = new function(){
             return _.contains(klass.applied(), role);
         } else {
             var applied_to = this._applications.get(role);
-            return    _.contains(applied_to, klass)
-                   || _.some(applied_to, _.partial(inherits_from, klass))
-                   || _.some(applied_to, _.partial(inherits_from, klass.constructor));
+            return _.some(applied_to, function(consumer){
+                return    klass === consumer
+                       || klass instanceof consumer
+                       || inherits_from(klass, consumer);
+            });
         }
     };
     this.apply_roles = function(klass){
