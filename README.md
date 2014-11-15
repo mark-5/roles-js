@@ -1,6 +1,17 @@
-# Role.js
+# Roles.js
 
-Role.js is a javscript library for [Role::Tiny](https://metacpan.org/pod/Role::Tiny) inspired traits. This includes support for providing methods, requiring methods, detecting conflicting methods, and installing method modifiers.
+Roles.js is a javscript library for [Role::Tiny](https://metacpan.org/pod/Role::Tiny) inspired traits. This includes support for providing methods, requiring methods, detecting conflicting methods, and installing method modifiers.
+
+```
+    var HasFoo = new Role({
+        get_foo: function(){ ... },
+    }, {
+        after: {initialize: function(){ ... }},
+        before: {render: function(){ ... }}
+    });
+    var View = Backbone.View.extend({ ... });
+    var ViewWithFoo = Role.apply_roles(View, HasFoo);
+```
 
 ## Class Methods
 
@@ -32,7 +43,7 @@ This is an object containing Role::Tiny keywords - with, requires, before, aroun
 
 ### apply_roles(Class, ...)
 
-The main entry point to Role.js. Returns a copy of the given class, with the specified roles applied.
+The main entry point to Roles.js. Returns a copy of the given class, with the specified roles applied.
 
 ```
 var ClassWithRoles = Role.apply_roles(Class, FirstRole, SecondRole);
