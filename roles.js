@@ -7,13 +7,13 @@
         root.Role = factory(root._, root.HashOfRefs);
     }
 })(this, function(_, HashOfRefs){
-    var inherits_from = function(subclass, superclass){
+    var INHERITS_FROM = function(subclass, superclass){
         var Surrogate = function(){};
         Surrogate.prototype = subclass.prototype;
         return (new Surrogate) instanceof superclass;
     };
 
-    var extend_class = function(mapping){
+    var EXTEND_CLASS = function(mapping){
         var klass = this;
         var child = function(){ return klass.apply(this, arguments) };
         _.extend(child, klass);
@@ -24,8 +24,7 @@
         return child;
     };
 
-    var method_modifiers = ['before', 'after', 'around'];
-    var not_methods = _.flatten([method_modifiers, 'with', 'requires']);
+    var METHOD_MODIFIERS = ['before', 'after', 'around'];
     var MetaRole = new function(){
         this._applications = new HashOfRefs;
 
@@ -38,7 +37,7 @@
                 return _.some(applied_to, function(consumer){
                     return    klass === consumer
                            || klass instanceof consumer
-                           || inherits_from(klass, consumer);
+                           || INHERITS_FROM(klass, consumer);
                 });
             }
         };
@@ -58,7 +57,7 @@
                 throw "Missing methods: " + methods;
             }
 
-            var extend = klass.extend || extend_class;
+            var extend = klass.extend || EXTEND_CLASS;
             var klass_with_role = extend.call(klass, provided);
             this._install_modifiers(klass_with_role, _.map(roles, function(role){ return role.modifiers() }));
 
@@ -71,7 +70,6 @@
 
             return klass_with_role;
         };
-        this._get_methods = function(role){ return _.omit(spec, ['before','after','around','with','requires']) };
         this._get_conflicts = function(roles){
             var provided = {}; var conflicts = {};
             _.each(roles, function(role){
@@ -95,7 +93,7 @@
             var me = this;
             var modifier_data = {};
             _.each(modifiers, function(modifier){
-                _.each(['before', 'around', 'after'], function(type){
+                _.each(METHOD_MODIFIERS, function(type){
                     var methods = modifier[type];
                     _.each(methods, function(coderefs, name){
                         if (!modifier_data[name]) modifier_data[name] = {wrapped: klass.prototype[name]};
@@ -129,9 +127,16 @@
         };
     };
 
-    var Role = function(spec){
-        this.spec = spec;
-        var conflicts = this.meta._get_conflicts(spec.with || []);
+    var Role = function(members, opts){
+        var me = this;
+        this.members = _.clone(members || {});
+        this.opts = _.clone(opts || {});
+        _.each(['with','requires'], function(key){
+            var val = me.opts[key];
+            if (!val) me.opts[key] = val = [];
+            if (!_.isArray(val)) me.opts[key] = [val];
+        });
+        var conflicts = this.meta._get_conflicts(this.opts.with);
         if (_.size(conflicts)) {
             var methods = _.keys(conflicts).join(',');
             throw "Conflicting methods: " + methods;
@@ -143,8 +148,8 @@
     Role.prototype = new function(){
         this.meta = MetaRole;
         this.requires = function(){
-            var applied = this.spec.with || [];
-            var from_spec = this.spec.requires || [];
+            var applied = this.opts.with;
+            var from_opts = this.opts.requires;
             var from_applied = _.flatten(
                 _.map(applied, function(role){ return role.requires() })
             ,true);
@@ -157,26 +162,24 @@
                                   .flatten(true)
                                   .uniq()
                                   .value();
-            var required = _.flatten([from_spec, from_applied, from_modifiers], true);
+            var required = _.flatten([from_opts, from_applied, from_modifiers], true);
             return _.difference(required, this.provides());
         };
         this.provides = function(){
-            var not_methods = ['before','after','around','with','requires'];
-            var from_spec = _.omit(this.spec, not_methods);
+            var provided = this.members;
             var from_applied = _.extend.apply(_,
-                _.map(this.spec.with||[], function(role){ return role.provides() })
+                _.map(this.opts.with, function(role){ return role.provides() })
             );
-            return _.extend({}, from_spec, from_applied);
+            return _.extend({}, provided, from_applied);
         };
         this.modifiers = function(){
-            var spec = this.spec;
-            var types = ['before','after','around'];
+            var opts = this.opts;
             var modifiers = {};
         
-            _.each(types, function(type){
-                var from_spec = spec[type] || {};
-                var from_applied = _.map(spec.with||[], function(role){ return role.modifiers() });
-                modifiers[type] = _.object(_.keys(from_spec), _.map(_.values(from_spec), function(val){ return [val] }));
+            _.each(METHOD_MODIFIERS, function(type){
+                var from_opts = opts[type] || {};
+                var from_applied = _.map(opts.with, function(role){ return role.modifiers() });
+                modifiers[type] = _.object(_.keys(from_opts), _.map(_.values(from_opts), function(val){ return [val] }));
                 _.each(from_applied, function(applied_modifiers){
                     _.each(applied_modifiers[type], function(mods, method){
                         modifiers[type][method].concat(mods);
@@ -188,7 +191,7 @@
         };
         this.applied = function(){
             var roles_applied = [this];
-            _.each(this.spec.with||[], function(role){
+            _.each(this.opts.with, function(role){
                 roles_applied.push(role);
                 _.each(role.applied(), function(role){ roles_applied.push(role) });
             })

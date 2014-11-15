@@ -60,14 +60,17 @@ describe('Role', function(){
     describe('role application', function(){
         it('with', function(){
             var FirstRole = new Role({foo: function(){}});
-            var RoleWith = new Role({with: [FirstRole], bar: function(){}});
+            var RoleWith = new Role({bar: function(){}}, {with: [FirstRole]});
             var Class = Role.apply_roles(function(){}, RoleWith);
             var o = new Class;
             assert.ok(o.bar, 'object has method from role');
             assert.ok(o.foo, 'object has method from applied roles in role');
+
+            var RoleSingularWith = new Role({bar: function(){}}, {with: FirstRole});
+            assert.ok(Role.does_role(RoleSingularWith, FirstRole), 'with option takes singular role')
         });
         it('requires', function(){
-            var RequiresFoo = new Role({requires: ['foo']});
+            var RequiresFoo = new Role(null, {requires: ['foo']});
             assert.throws(
                 function(){ Role.apply_roles(function(){}, RequiresFoo) },
                 'missing required throws an error'
@@ -82,20 +85,23 @@ describe('Role', function(){
                 function(){ Role.apply_roles(FooClass, RequiresFoo) },
                 'applied role to class implementing required method'
             );
-            var DoesRequirement = new Role({requires: ['foo'], foo: function(){}});
+            var DoesRequirement = new Role({foo: function(){}}, {requires: ['foo']});
             assert.doesNotThrow(
                 function(){ Role.apply_roles(function(){}, DoesRequirement) },
                 'applied role which does its own requires'
             );
-            var WithRequirement = new Role({requires: ['foo'], with: [DoesFoo]});
+            var WithRequirement = new Role(null, {requires: ['foo'], with: [DoesFoo]});
             assert.doesNotThrow(
                 function(){ Role.apply_roles(function(){}, WithRequirement) },
                 'applied role which applies its own required method'
             ); 
             assert.doesNotThrow(
-                function(){ new Role({with: [RequiresFoo]}) },
+                function(){ new Role(null, {with: [RequiresFoo]}) },
                 'role can be composed with missing requirements'
             );
+
+            var SinglularRequirement = new Role(null, {requires: 'foo'});
+            assert.deepEqual(SinglularRequirement.requires(), ['foo'], 'role accepts singular requires option');
         });
         it('conflicts', function(){
             var DoesFoo = new Role({foo: function(){}});
@@ -106,7 +112,7 @@ describe('Role', function(){
                 'conflict applying duplicate methods to class'
             );
             assert.throws(
-                function(){ new Role({with: [DoesFoo, AlsoDoesFoo]}) },
+                function(){ new Role(null, {with: [DoesFoo, AlsoDoesFoo]}) },
                 /conflict.*foo/i,
                 'conflict applying duplicate methods to role'
             );
@@ -115,7 +121,7 @@ describe('Role', function(){
     describe('modifiers', function(){
         it('before', function(){
             var events = [];
-            var BeforeFoo = new Role({before: {foo: function(){ events.push('before') }}});
+            var BeforeFoo = new Role(null, {before: {foo: function(){ events.push('before') }}});
             assert.deepEqual(BeforeFoo.requires(), ['foo'], 'modifier requires modified method');
 
             var Class = function(){}; Class.prototype = {foo: function(){ events.push('called') }};
@@ -125,7 +131,7 @@ describe('Role', function(){
         });
         it('after', function(){
             var events = [];
-            var AfterFoo = new Role({after: {foo: function(){ events.push('after') }}});
+            var AfterFoo = new Role(null, {after: {foo: function(){ events.push('after') }}});
             assert.deepEqual(AfterFoo.requires(), ['foo'], 'modifier requires modified method');
 
             var Class = function(){}; Class.prototype = {foo: function(){ events.push('called') }};
@@ -140,7 +146,7 @@ describe('Role', function(){
                 method.apply(this, _.rest(arguments));
                 events.push('after');
             };
-            var AroundFoo = new Role({around: {foo: notify_around}});
+            var AroundFoo = new Role(null, {around: {foo: notify_around}});
             assert.deepEqual(AroundFoo.requires(), ['foo'], 'modifier requires modified method');
 
             var Class = function(){}; Class.prototype = {foo: function(){ events.push('called') }};
@@ -151,7 +157,7 @@ describe('Role', function(){
         it('multiple modifiers in role', function(){
             var events = [];
             var Class = function(){}; Class.prototype = {foo: function(){ events.push('called') }};
-            var Modifier = new Role({
+            var Modifier = new Role(null, {
                 before: {foo: function(){ events.push('before') }},
                 around: {foo: function(method){
                     events.push('before around');
