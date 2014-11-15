@@ -1,0 +1,22 @@
+{
+  "name": "roles",
+  "version": "0.1.0",
+  "description": "Role::Tiny inspired traits for JavaScript",
+  "main": "roles.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mark-5/roles-js.git"
+  },
+  "author": "Mark Flickinger <maf@cpan.org>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mark-5/roles-js/issues"
+  },
+  "homepage": "https://github.com/mark-5/roles-js"
+}

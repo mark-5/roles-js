@@ -57,8 +57,7 @@
                 throw "Missing methods: " + methods;
             }
 
-            var extend = klass.extend || EXTEND_CLASS;
-            var klass_with_role = extend.call(klass, provided);
+            var klass_with_role = EXTEND_CLASS.call(klass, provided);
             this._install_modifiers(klass_with_role, _.map(roles, function(role){ return role.modifiers() }));
 
             var roles_applied = roles.concat(_.chain(roles).map(function(role){ return role.applied() }).flatten(true).value());
@@ -101,7 +100,7 @@
                             if (!modifier_data[name].before) modifier_data[name].before = [];
                             coderefs = _.clone(coderefs).reverse();
                             // modifiers are sorted from lowest priority to highest(to mimic role application priorities)
-                            //  so reverse so highest precendent coderefs are executed first
+                            //  reverse so highest priority coderefs are executed first
                             modifier_data[name].before = _.flatten([coderefs, modifier_data[name].before], true);
                         } else if (type == 'after') {
                             if (!modifier_data[name].after) modifier_data[name].after = [];
