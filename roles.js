@@ -99,6 +99,9 @@
                         if (!modifier_data[name]) modifier_data[name] = {wrapped: klass.prototype[name]};
                         if (type == 'before') {
                             if (!modifier_data[name].before) modifier_data[name].before = [];
+                            coderefs = _.clone(coderefs).reverse();
+                            // modifiers are sorted from lowest priority to highest(to mimic role application priorities)
+                            //  so reverse so highest precendent coderefs are executed first
                             modifier_data[name].before = _.flatten([coderefs, modifier_data[name].before], true);
                         } else if (type == 'after') {
                             if (!modifier_data[name].after) modifier_data[name].after = [];
@@ -181,14 +184,16 @@
                 var from_opts = _.clone(opts[type] || {});
                 _.each(from_opts, function(val, key){ if (!_.isArray(from_opts[key])) from_opts[key] = [val] });
                 var from_applied = _.map(opts.with, function(role){ return role.modifiers()[type] || {} });
-                var methods_modified = _.chain([from_opts, from_applied])
+                var methods_modified = _.chain([from_applied, from_opts])
                                         .flatten(true)
                                         .map(function(mod){ return _.keys(mod) })
                                         .flatten(true)
                                         .uniq()
                                         .value();
                 _.each(methods_modified, function(method_name){
-                    modifiers[type][method_name]  = _.chain([from_opts, from_applied])
+                    // modifiers are sorted from least to highest priority
+                    //  make sure the original code refs have highest priority
+                    modifiers[type][method_name]  = _.chain([from_applied, from_opts])
                                                      .flatten(true)
                                                      .map(function(mod){ return mod[method_name] || [] })
                                                      .flatten(true)
