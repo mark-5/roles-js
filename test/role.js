@@ -1,4 +1,4 @@
-var Role   = require("../roles.js");
+var Role   = require("../role.js");
 var assert = require('assert');
 var _      = require('underscore');
 
