@@ -177,13 +177,22 @@
             var modifiers = {};
         
             _.each(METHOD_MODIFIERS, function(type){
-                var from_opts = opts[type] || {};
-                var from_applied = _.map(opts.with, function(role){ return role.modifiers() });
-                modifiers[type] = _.object(_.keys(from_opts), _.map(_.values(from_opts), function(val){ return [val] }));
-                _.each(from_applied, function(applied_modifiers){
-                    _.each(applied_modifiers[type], function(mods, method){
-                        modifiers[type][method].concat(mods);
-                    })
+                modifiers[type] = {};
+                var from_opts = _.clone(opts[type] || {});
+                _.each(from_opts, function(val, key){ if (!_.isArray(from_opts[key])) from_opts[key] = [val] });
+                var from_applied = _.map(opts.with, function(role){ return role.modifiers()[type] || {} });
+                var methods_modified = _.chain([from_opts, from_applied])
+                                        .flatten(true)
+                                        .map(function(mod){ return _.keys(mod) })
+                                        .flatten(true)
+                                        .uniq()
+                                        .value();
+                _.each(methods_modified, function(method_name){
+                    modifiers[type][method_name]  = _.chain([from_opts, from_applied])
+                                                     .flatten(true)
+                                                     .map(function(mod){ return mod[method_name] || [] })
+                                                     .flatten(true)
+                                                     .value();
                 });
             });
 

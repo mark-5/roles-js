@@ -173,14 +173,21 @@ describe('Role', function(){
                 'modifiers executed in order'
             );
         });
-        it.skip('role has method modifiers in applied role', function(){
+        it('role has method modifiers in applied role', function(){
             var events = [];
             var Class = function(){}; Class.prototype = {foo: function(){ events.push('called') }};
-        
+            var FirstModifier = new Role(null, {before: {foo: function(){ events.push('before') }}});
+            var SecondModifier = new Role(null, {with: FirstModifier, after: {foo: function(){ events.push('after') }}});
+            var o = new(Role.apply_roles(Class, SecondModifier)); o.foo();
+            assert.deepEqual(events, ['before','called','after']);
         });
-        it.skip('class applies multiple roles with method modifiers', function(){
+        it('class applies multiple roles with method modifiers', function(){
             var events = [];
             var Class = function(){}; Class.prototype = {foo: function(){ events.push('called') }};
+            var FirstModifier = new Role(null, {before: {foo: function(){ events.push('before') }}});
+            var SecondModifier = new Role(null, {after: {foo: function(){ events.push('after') }}});
+            var o = new(Role.apply_roles(Class, FirstModifier, SecondModifier)); o.foo();
+            assert.deepEqual(events, ['before','called','after']);
         });
     });
     describe('inheritance', function(){
