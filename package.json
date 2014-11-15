@@ -3,11 +3,26 @@
   "version": "0.1.0",
   "description": "Role::Tiny inspired traits for JavaScript",
   "main": "roles.js",
+  "dependencies": {
+    "underscore": "*"
+  },
+  "devDependencies": {
+    "browserify": "*",
+    "browserify-shim": "*",
+    "uglifyjs": "*"
+  },
   "directories": {
     "test": "test"
   },
   "scripts": {
+    "build": "browserify roles.js hash_of_refs.js -o browser/roles.js && uglifyjs browser/roles.js -o browser/roles-min.js",
     "test": "mocha"
+  },
+  "browserify": {
+    "transform": [ "browserify-shim" ]
+  },
+  "browserify-shim": {
+    "underscore": "global:_"
   },
   "repository": {
     "type": "git",
