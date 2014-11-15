@@ -119,7 +119,7 @@
                 klass.prototype[name] = function(){
                     var me = this; var args = arguments;
                     _.each(modifiers.before||[], function(code){ code.apply(me, args) });
-                    var retval = modifiers.wrapped.apply(me, args);;
+                    var retval = modifiers.wrapped.apply(me, args);
                     _.each(modifiers.after||[], function(code){ code.apply(me, args) });
                     return retval;
                 };

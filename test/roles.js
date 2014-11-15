@@ -189,6 +189,40 @@ describe('Role', function(){
             var o = new(Role.apply_roles(Class, FirstModifier, SecondModifier)); o.foo();
             assert.deepEqual(events, ['before','called','after']);
         });
+        it('stack modifiers from multiple roles', function(){
+            var events = [];
+            var Class = function(){}; Class.prototype = {foo: function(){ events.push('called') }};
+            var FirstModifier = new Role(null, {
+                before: {foo: function(){ events.push('before_first') }},
+                after: {foo: function(){ events.push('after_first') }},
+                around: {foo: function(method){
+                    events.push('before_around_first');
+                    method.call(this, _.rest(arguments));
+                    events.push('after_around_first');
+                }}
+            });
+            var SecondModifier = new Role(null, {
+                before: {foo: function(){ events.push('before_second') }},
+                after: {foo: function(){ events.push('after_second') }},
+                around: {foo: function(method){
+                    events.push('before_around_second');
+                    method.call(this, _.rest(arguments));
+                    events.push('after_around_second');
+                }}
+            });
+            var o = new(Role.apply_roles(Class, FirstModifier, SecondModifier)); o.foo();
+            assert.deepEqual(
+                events,
+                [
+                    'before_second', 'before_first',
+                    'before_around_second', 'before_around_first',
+                    'called',
+                    'after_around_first', 'after_around_second',
+                    'after_first', 'after_second'
+                ],
+                'method modifiers from multiple roles are stacked correctly'
+            );
+        });
     });
     describe('inheritance', function(){
         var Parent = function(){};
