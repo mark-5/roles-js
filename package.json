@@ -15,7 +15,7 @@
     "test": "test"
   },
   "scripts": {
-    "build": "browserify roles.js hash_of_refs.js -o browser/roles.js && uglifyjs browser/roles.js -o browser/roles-min.js",
+    "build": "browserify roles.js hash_of_refs.js -o browser/roles.js && uglifyjs browser/roles.js -o browser/roles-min.js -c -m",
     "test": "mocha"
   },
   "browserify": {
